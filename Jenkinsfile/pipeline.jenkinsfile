@@ -221,13 +221,7 @@ node{
 
 
         Git_URL = "https://steve.kansa%40compuware.com@evolve.compuware.com:8443/scm/pt/cobol_examples.git"
-        checkout changelog: false, poll: false, 
-        scm: [$class: 'GitSCM', 
-        branches: [[name: "*/${Git_Branch}"]], 
-        doGenerateSubmoduleConfigurations: false, 
-        extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'bitbucket']], 
-        submoduleCfg: [], 
-        userRemoteConfigs: [[credentialsId: "${Git_Credentials}", name: 'origin', url: "${Git_URL}"]]]
+        
 
         sh "git checkout ${branch}" //To get a local branch tracking remote
     
