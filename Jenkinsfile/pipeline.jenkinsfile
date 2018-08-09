@@ -27,7 +27,7 @@ String Git_Branch           = "master"
 
 
 String MF_Source          = "MF_Source"  //directory that contains downloaded cobol source
-String CC_repository      = "PFHSXK0.CCREPOS.DEMO1"
+String CC_repository      = "SALESSUP.SXK1.CCREPOS"
 
 // SonarQube
 String SQ_Scanner_Name      = "scanner"   // Name of SQ Scanner installation in "Manage Jenkins" -> "Global Tool Configuration" -> "SonarQube Scanner Installations"                                                     // On the FTS server this will be "scanner"
