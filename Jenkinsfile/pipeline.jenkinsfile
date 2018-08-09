@@ -101,7 +101,7 @@ node{
         //Retrieve the Tests from Github that match that ISPWW Stream and Application
         Git_URL = "https://github.com/${Git_User}/${Git_TTT_Repo}"
 
-        gitcheckout(Git_Branch, Git_URL)
+        gitcheckout(Git_Branch, Git_URL, Git_Credentials)
     }
 
     // findFiles requires the "Pipeline Utilities Plugin"
