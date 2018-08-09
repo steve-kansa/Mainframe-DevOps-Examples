@@ -55,6 +55,9 @@ def String getPathNum(String Level)
 
 def gitcheckout(String URL, String Branch, String Credentials)
 {
+        println "Scenario " + URL
+        println "Scenario " + Branch
+        println "Scenario " + Credentials
         checkout changelog: false, poll: false, 
         scm: [$class: 'GitSCM', 
         branches: [[name: "*/${Branch}"]], 
@@ -101,7 +104,7 @@ node{
         //Retrieve the Tests from Github that match that ISPWW Stream and Application
         Git_URL = "https://github.com/${Git_User}/${Git_TTT_Repo}"
 
-        gitcheckout(Git_Branch, Git_URL, Git_Credentials)
+        gitcheckout(Git_URL, Git_Branch, Git_Credentials)
     }
 
     // findFiles requires the "Pipeline Utilities Plugin"
