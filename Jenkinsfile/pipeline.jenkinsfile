@@ -152,7 +152,7 @@ node{
                     ccClearStats: false,
                     ccRepo: "${CC_repository}",
                     ccSystem: "${ISPW_Application}", 
-                    ccTestId: "${JOB_NAME}",  //Jenkins environemnt variable, resolves to build number, i.e. #177 
+                    ccTestId: "DEMO",  //Jenkins environemnt variable, resolves to build number, i.e. #177 
                     credentialsId: "${HCI_Token}", 
                     deleteTemp: true, 
                     hlq: '', 
@@ -171,7 +171,7 @@ node{
     stage("Collect Coverage Metrics")
     {
             string sources="${ISPW_Application}\\${MF_Source}"
-            def ccproperties = 'cc.sources=' + sources + '\rcc.repos=' + CC_repository + '\rcc.system=' + ISPW_Application + "*" + '\rcc.test=' + JOB_NAME
+            def ccproperties = 'cc.sources=' + sources + '\rcc.repos=' + CC_repository + '\rcc.system=' + ISPW_Application + "*" + '\rcc.test=DEMO'
 
             step([$class: 'CodeCoverageBuilder',
             analysisProperties: ccproperties,
