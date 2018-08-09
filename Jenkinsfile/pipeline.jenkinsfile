@@ -53,7 +53,7 @@ def String getPathNum(String Level)
     return Level.charAt(Level.length() - 1)
 }
 
-def gitcheckout(String URL, String Branch, String Credentials)
+def gitcheckout(String URL, String Branch, String Credentials, String Folder)
 {
         println "Scenario " + URL
         println "Scenario " + Branch
@@ -62,7 +62,7 @@ def gitcheckout(String URL, String Branch, String Credentials)
         scm: [$class: 'GitSCM', 
         branches: [[name: "*/${Branch}"]], 
         doGenerateSubmoduleConfigurations: false, 
-        extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'tests']], 
+        extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: "${Folder}"]], 
         submoduleCfg: [], 
         userRemoteConfigs: [[credentialsId: "${Credentials}", name: 'origin', url: "${URL}"]]]
 }
@@ -104,7 +104,7 @@ node{
         //Retrieve the Tests from Github that match that ISPWW Stream and Application
         Git_URL = "https://github.com/${Git_User}/${Git_TTT_Repo}"
 
-        gitcheckout(Git_URL, Git_Branch, Git_Credentials)
+        gitcheckout(Git_URL, Git_Branch, Git_Credentials, "tests")
     }
 
     // findFiles requires the "Pipeline Utilities Plugin"
@@ -216,19 +216,19 @@ node{
                 }
             }   
     }
-    /*
-    stage("Commit to git"){
-
-        sh 'git config --global credential.helper cache'
-        sh 'git config --global push.default simple'
-
-
-        Git_URL = "https://steve.kansa%40compuware.com@evolve.compuware.com:8443/scm/pt/cobol_examples.git"
-        
-
-        sh "git checkout ${branch}" //To get a local branch tracking remote
     
+    stage("Commit to git"){
+        
+        Git_URL = "https://github.com/${Git_User}/${ISPW_Application}"
+
+        gitcheckout(Git_URL, Git_Branch, Git_Credentials, "gitsource")
+
+        sh 'cp -a /tests/. /gitsource/'
+
+        //sh 'git config --global credential.helper cache'
+        //sh 'git config --global push.default simple'
     }
+    /*
     stage("Start release in XL Release")
     {
             // Trigger XL Release Jenkins Plugin to kickoff a Release
