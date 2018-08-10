@@ -171,7 +171,7 @@ node{
     stage("Collect Coverage Metrics")
     {
             string sources="${ISPW_Application}\\${MF_Source}"
-            def ccproperties = 'cc.sources=' + sources + '\rcc.repos=' + CC_repository + '\rcc.system=' + ISPW_Application + "*" + '\rcc.test=DEMO'
+            def ccproperties = 'cc.sources=' + sources + '\rcc.repos=' + CC_repository + '\rcc.system=' + ISPW_Application  + '\rcc.test=DEMO'
 
             step([$class: 'CodeCoverageBuilder',
             analysisProperties: ccproperties,
