@@ -152,7 +152,7 @@ node{
                     ccClearStats: false,
                     ccRepo: "${CC_repository}",
                     ccSystem: "${ISPW_Application}", 
-                    ccTestId: "DEMO",  //Jenkins environemnt variable, resolves to build number, i.e. #177 
+                    ccTestId: "${JOB_NAME}",  //Jenkins environemnt variable, resolves to build number, i.e. #177 
                     credentialsId: "${HCI_Token}", 
                     deleteTemp: true, 
                     hlq: '', 
