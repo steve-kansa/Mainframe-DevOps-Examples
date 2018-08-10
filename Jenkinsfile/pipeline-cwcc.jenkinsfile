@@ -8,9 +8,9 @@ import java.net.URL
 
 //Compuware Envirnoment to connect
 String CES_Token         = "d01c2aa5-5ee9-4d95-8368-7a5effd6e79f"
-String HCI_Conn_ID       = "6c5988e9-94e2-4989-8a40-5a6d9bf310c1"
-String HCI_Token         = "cwcc"      //cwcc 664cc0d0-688d-4000-8354-5c7d3679d40b  
-String CES_Connection    = "192.168.96.130:2020"      // dtw-pmsonarqube.nasa.cpwr.corp:2020  
+String HCI_Conn_ID       = "196de681-04d7-4170-824f-09a5457c5cda"
+String HCI_Token         = "pfhsxk0cwcc"      //cwcc 664cc0d0-688d-4000-8354-5c7d3679d40b  
+String CES_Connection    = "cwcc:2020"      // dtw-pmsonarqube.nasa.cpwr.corp:2020  
 
 // Jenkins credential ID and CES Personal Access token to be used for mainframe access
 
