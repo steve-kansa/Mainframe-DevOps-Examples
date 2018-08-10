@@ -198,7 +198,7 @@ node{
             }
 
             def SQ_Tests                = " -Dsonar.tests=tests ${SQ_TestResult} -Dsonar.coverageReportPaths=Coverage/CodeCoverage.xml"
-            def SQ_PullRequest          = " -Dsonar.branch.name=branch-${SetId} -Dsonar.branch.target=master"
+            def SQ_PullRequest          = " -Dsonar.branch.name=branch-${AssignmentId} -Dsonar.branch.target=master"
             def SQ_ProjectKey           = " -Dsonar.projectKey=${ISPW_Application} -Dsonar.projectName=${SQ_Project} -Dsonar.projectVersion=1.2"
             def SQ_Source               = " -Dsonar.sources=${ISPW_Application}\\MF_Source"
             def SQ_Copybook             = " -Dsonar.cobol.copy.directories=${ISPW_Application}\\MF_Source"
