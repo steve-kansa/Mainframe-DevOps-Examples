@@ -77,13 +77,13 @@ node{
     def ISPW_Target_Level = "QA" + PathNum
 
 
-    stage("clean previously downloaded source")
+    /*stage("clean previously downloaded source")
     {
         // Clean out any previously downloaded source
         //dir("${ISPW_Application}\\MF_Source") {
         //deleteDir()
         //}
-    }
+    }*/
 
     stage("Retrieve Code From ISPW")
     {
