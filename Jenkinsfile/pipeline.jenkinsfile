@@ -172,7 +172,7 @@ node{
             junit allowEmptyResults: true, keepLongStdio: true, testResults: "TTTUnit/*.xml"
         }
         else{
-            println "NO tests were found for any of the changed programs"
+            println "No tests were found for any of the changed programs"
         }
     }
 
@@ -195,7 +195,9 @@ node{
         {
             //Finds all of the TTT results files that will be submitted to SonarQube
             def TTTListOfResults = findFiles(glob: 'TTTSonar/*.xml')
-            def SQ_TestResult          = "-Dsonar.testExecutionReportPaths="
+            def Coveragefiles    = findFiles(glob: 'Coverage/*.xml')
+
+            def SQ_TestResult    = "-Dsonar.testExecutionReportPaths="
 
             if (TTTListOfResults != null){
                 // Run SonarQube Scanner 
@@ -206,8 +208,19 @@ node{
                     SQ_TestResult = SQ_TestResult + "TTTSonar/" + it.name +  ','
                 }
             }
+            else{
+                SQ_TestResult = " "
+            }
 
-            def SQ_Tests                = " -Dsonar.tests=tests ${SQ_TestResult} -Dsonar.coverageReportPaths=Coverage/CodeCoverage.xml"
+            if(Coveragefiles != null)
+            {
+                SQ_Coverage = " -Dsonar.coverageReportPaths=Coverage/CodeCoverage.xml"
+            }
+            else{
+                SQ_Coverage = " "
+            }
+
+            def SQ_Tests                = " -Dsonar.tests=tests ${SQ_TestResult} ${SQ_Coverage}"
             def SQ_PullRequest          = " -Dsonar.branch.name=branch-${SetId} -Dsonar.branch.target=master"
             def SQ_ProjectKey           = " -Dsonar.projectKey=${ISPW_Application} -Dsonar.projectName=${SQ_Project} -Dsonar.projectVersion=1.2"
             def SQ_Source               = " -Dsonar.sources=${ISPW_Application}\\MF_Source"
@@ -236,9 +249,9 @@ node{
         def Cobolfiles = findFiles(glob: 'SXK1/MF_Source/*.cbl')
         def Copybooks  = findFiles(glob: 'SXK1/MF_Source/*.cpy')
 
-        if (Cobolfiles != null || Copybooks != null) {
-            println "No eligable source changed in ISPW\nExiting Pipeline"
-            error "Exiting Pipeline"
+        //if (Cobolfiles != null || Copybooks != null) {
+         //   println "No eligable source changed in ISPW\nExiting Pipeline"
+         //   error "Exiting Pipeline"
 
             Cobolfiles.each
             {
@@ -263,11 +276,11 @@ node{
                 bat "git commit -m \"${message}"
                 bat "git push https://steve-kansa:Compuware2018@github.com/steve-kansa/SXK1.git HEAD:master"
             }
-        }
+        //}
     }
     stage("SQ from git")
     {
-            def SQ_Tests                = " -Dsonar.tests=tests ${SQ_TestResult} -Dsonar.coverageReportPaths=Coverage/CodeCoverage.xml"
+            //def SQ_Tests                = " -Dsonar.tests=tests ${SQ_TestResult} -Dsonar.coverageReportPaths=Coverage/CodeCoverage.xml"
             def SQ_PullRequest          = " -Dsonar.branch.name=branch-${SetId} -Dsonar.branch.target=master"
             def SQ_ProjectKey           = " -Dsonar.projectKey=ISPWGIT -Dsonar.projectName=ISPWGIT -Dsonar.projectVersion=1.2"
             def SQ_Source               = " -Dsonar.sources=gitsource"
