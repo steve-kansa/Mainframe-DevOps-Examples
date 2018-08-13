@@ -273,7 +273,7 @@ node{
                 bat "git config --global user.name ${Owner}"
                 Owner = Owner + "@compuware.com"
                 bat "git config --global user.email ${Owner}"
-                bat "git commit -m \"${message}"
+                //bat "git commit -m \"${message}"
                 //bat "git push https://steve-kansa:Compuware2018@github.com/steve-kansa/SXK1.git HEAD:master"
             }
         //}
