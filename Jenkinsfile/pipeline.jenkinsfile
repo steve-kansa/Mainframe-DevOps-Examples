@@ -274,12 +274,15 @@ node{
                 Owner = Owner + "@compuware.com"
                 bat "git config --global user.email ${Owner}"
                 bat "git commit -m \"${message}"
-                bat "git push https://steve-kansa:Compuware2018@github.com/steve-kansa/SXK1.git HEAD:master"
+                //bat "git push https://steve-kansa:Compuware2018@github.com/steve-kansa/SXK1.git HEAD:master"
             }
         //}
     }
     stage("SQ from git")
     {
+        def scannerHome = tool 'scanner';
+        withSonarQubeEnv('localhost') 
+        {
             //def SQ_Tests                = " -Dsonar.tests=tests ${SQ_TestResult} -Dsonar.coverageReportPaths=Coverage/CodeCoverage.xml"
             def SQ_PullRequest          = " -Dsonar.branch.name=branch-${SetId} -Dsonar.branch.target=master"
             def SQ_ProjectKey           = " -Dsonar.projectKey=ISPWGIT -Dsonar.projectName=ISPWGIT -Dsonar.projectVersion=1.2"
@@ -287,6 +290,7 @@ node{
             def SQ_Copybook             = " -Dsonar.cobol.copy.directories=${ISPW_Application}\\MF_Source"
             def SQ_Cobol_conf           = " -Dsonar.cobol.file.suffixes=cbl,testsuite,testscenario,stub -Dsonar.cobol.copy.suffixes=cpy -Dsonar.sourceEncoding=UTF-8 -Dsonar.language=cobol"
             bat "${scannerHome}/bin/sonar-scanner" + SQ_Tests + SQ_PullRequest + SQ_ProjectKey + SQ_Source + SQ_Copybook + SQ_Cobol_conf
+        }
     }
 
     /*
