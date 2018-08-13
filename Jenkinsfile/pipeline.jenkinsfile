@@ -289,7 +289,7 @@ node{
             def SQ_Source               = " -Dsonar.sources=gitsource"
             def SQ_Copybook             = " -Dsonar.cobol.copy.directories=${ISPW_Application}\\MF_Source"
             def SQ_Cobol_conf           = " -Dsonar.cobol.file.suffixes=cbl,testsuite,testscenario,stub -Dsonar.cobol.copy.suffixes=cpy -Dsonar.sourceEncoding=UTF-8 -Dsonar.language=cobol"
-            bat "${scannerHome}/bin/sonar-scanner" + SQ_Tests + SQ_PullRequest + SQ_ProjectKey + SQ_Source + SQ_Copybook + SQ_Cobol_conf
+            bat "${scannerHome}/bin/sonar-scanner" + SQ_PullRequest + SQ_ProjectKey + SQ_Source + SQ_Copybook + SQ_Cobol_conf
         }
     }
 
