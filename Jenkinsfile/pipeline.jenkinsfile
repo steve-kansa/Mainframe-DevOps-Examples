@@ -40,7 +40,7 @@ String ISPW_Container     = "JAN1"       //ContainerID
 String ISPW_ContainerType = "releases"   //Valid values are assignments or releases
 
 String ISPW_Dev_Level     = "DEV2"
-String ISPW_Release       = "DEVOPS2"
+//String ISPW_Release       = "DEVOPS2"
 
 // XL Release template to trigger /  XL Release user to connect with
 String XLR_Template       = "A Release from Jenkins" // XL Release template to invoke at the end of the Jenkins workflow
@@ -152,7 +152,7 @@ node{
                     ccClearStats: false,
                     ccRepo: "${CC_repository}",
                     ccSystem: "${ISPW_Application}", 
-                    ccTestId: "DEMO",  //Jenkins environemnt variable, resolves to build number, i.e. #177 
+                    ccTestId: "${JOB_NAME}",  //Jenkins environemnt variable, resolves to build number, i.e. #177 
                     credentialsId: "${HCI_Token}", 
                     deleteTemp: true, 
                     hlq: '', 
@@ -171,7 +171,7 @@ node{
     stage("Collect Coverage Metrics")
     {
             string sources="${ISPW_Application}\\${MF_Source}"
-            def ccproperties = 'cc.sources=' + sources + '\rcc.repos=' + CC_repository + '\rcc.system=' + ISPW_Application  + '\rcc.test=PIPELINE'
+            def ccproperties = 'cc.sources=' + sources + '\rcc.repos=' + CC_repository + '\rcc.system=' + ISPW_Application  + '\rcc.test=' + JOB_NAME
 
             step([$class: 'CodeCoverageBuilder',
             analysisProperties: ccproperties,
