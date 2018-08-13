@@ -223,11 +223,49 @@ node{
 
         gitcheckout(Git_URL, Git_Branch, Git_Credentials, "gitsource")
 
-        sh 'cp -a /tests/. /gitsource/'
+        def Cobolfiles = findFiles(glob: 'SXK1/MF_Source/*.cbl')
+        def Copybooks  = findFiles(glob: 'SXK1/MF_Source/*.cpy')
 
-        //sh 'git config --global credential.helper cache'
-        //sh 'git config --global push.default simple'
+        if (Cobolfiles == null && Copybooks == null) {
+            println "No eligable source changed in ISPW\nExiting Pipeline"
+            error "Exiting Pipeline"
+        }
+
+        Cobolfiles.each
+        {
+            echo "Copying ${it.path}"
+            bat "xcopy /s /Y " + it.path + " gitsource\\MF_Source"
+        }
+        Copybooks.each
+        {
+            echo "Copying ${it.path}"
+            bat "xcopy /s /Y " + it.path + " gitsource\\MF_Source"
+        }
+        
+        dir("gitsource")
+        {    
+            bat "git add ."
+
+            message = "Changes for SetID " + SetId + " from User: " + Owner
+        
+            bat "git config --global user.name ${Owner}"
+            Owner = Owner + "@compuware.com"
+            bat "git config --global user.email ${Owner}"
+            bat "git commit -m \"${message}"
+            bat "git push https://steve-kansa:Compuware2018@github.com/steve-kansa/SXK1.git HEAD:master"
+        }
     }
+    stage("SQ from git")
+    {
+            def SQ_Tests                = " -Dsonar.tests=tests ${SQ_TestResult} -Dsonar.coverageReportPaths=Coverage/CodeCoverage.xml"
+            def SQ_PullRequest          = " -Dsonar.branch.name=branch-${SetId} -Dsonar.branch.target=master"
+            def SQ_ProjectKey           = " -Dsonar.projectKey=ISPWGIT -Dsonar.projectName=ISPWGIT -Dsonar.projectVersion=1.2"
+            def SQ_Source               = " -Dsonar.sources=gitsource"
+            def SQ_Copybook             = " -Dsonar.cobol.copy.directories=${ISPW_Application}\\MF_Source"
+            def SQ_Cobol_conf           = " -Dsonar.cobol.file.suffixes=cbl,testsuite,testscenario,stub -Dsonar.cobol.copy.suffixes=cpy -Dsonar.sourceEncoding=UTF-8 -Dsonar.language=cobol"
+            bat "${scannerHome}/bin/sonar-scanner" + SQ_Tests + SQ_PullRequest + SQ_ProjectKey + SQ_Source + SQ_Copybook + SQ_Cobol_conf
+    }
+
     /*
     stage("Start release in XL Release")
     {
