@@ -119,13 +119,16 @@ node{
     ListOfSources.each
     {
         ListOfPrograms.add(it.name.trim().split("\\.")[0])
+        println "Program: ${it.path}"
     }
 
     stage("Execute related Unit Tests")
     {
+        def Stevevar = "0"
         // Loop through all downloaded TTT scenarios
         TTTListOfScenarios.each
         {
+            println "Test: ${it.path}"
             def TTTScenarioPath = it.path
             // Get root node of the path, i.e. the name of the TTT project
             // The split method uses regex to search for patterns, therefore
@@ -139,12 +142,10 @@ node{
             // For each of the scenarios walk through the list of new scources and determine if the target matches one of the programs
             // In that case, execute the unit test
             
-            def Testcounter
-
             //Determine if the program name matches the target of the TTT scenario
             if(ListOfPrograms.contains(TTTScenarioTarget))
             {
-                Testcounter = 1
+                Stevevar = "1"
                 println "*************************"
                 println "Scenario " + TTTScenarioFullName
                 println "Path " + TTTScenarioPath
@@ -166,15 +167,17 @@ node{
                     useStubs: false])                    
             }
         }
-        if (Testcounter){
+        if (Stevevar == "1"){
             // Process the Total Test result files into Jenkins
             junit allowEmptyResults: true, keepLongStdio: true, testResults: "TTTUnit/*.xml"
+        }
+        else{
+            println "NO tests were found for any of the changed programs"
         }
     }
 
     stage("Collect Coverage Metrics")
     {
-        if(Testcounter){
             string sources="${ISPW_Application}\\${MF_Source}"
             def ccproperties = 'cc.sources=' + sources + '\rcc.repos=' + CC_repository + '\rcc.system=' + ISPW_Application  + '\rcc.test=' + JOB_NAME
 
@@ -183,7 +186,6 @@ node{
             analysisPropertiesPath: '',
             connectionId: "${HCI_Conn_ID}", 
             credentialsId: "${HCI_Token}"])
-        }
     }
     stage("Check SonarQube Quality Gate") 
     {
@@ -195,7 +197,7 @@ node{
             def TTTListOfResults = findFiles(glob: 'TTTSonar/*.xml')
             def SQ_TestResult          = "-Dsonar.testExecutionReportPaths="
 
-            if (Testcounter){
+            if (TTTListOfResults != null){
                 // Run SonarQube Scanner 
                 TTTListOfResults.each
                 {
