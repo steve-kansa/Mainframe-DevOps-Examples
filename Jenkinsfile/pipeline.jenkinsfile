@@ -284,7 +284,7 @@ node{
         withSonarQubeEnv('localhost') 
         {
             //def SQ_Tests                = " -Dsonar.tests=tests ${SQ_TestResult} -Dsonar.coverageReportPaths=Coverage/CodeCoverage.xml"
-            def SQ_PullRequest          = " -Dsonar.branch.name=branch-${SetId} -Dsonar.branch.target=master"
+            def SQ_PullRequest          = " "
             def SQ_ProjectKey           = " -Dsonar.projectKey=ISPWGIT -Dsonar.projectName=ISPWGIT -Dsonar.projectVersion=1.2"
             def SQ_Source               = " -Dsonar.sources=gitsource"
             def SQ_Copybook             = " -Dsonar.cobol.copy.directories=${ISPW_Application}\\MF_Source"
