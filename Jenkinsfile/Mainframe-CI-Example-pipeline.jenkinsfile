@@ -18,13 +18,12 @@ import java.net.URL
  This Pipeline Requires the below Parameters to be defined in the Jenkins Job
  The Jenkins Parameters can be supplied by a ISPW Webhook by defining a webhook like the example below.  
  Please note that the assignment is not currently available in the webhook, but will be added in a future release.
- http://<<your jenkins server>>/job/<<you jenkins job>>/buildWithParameters?ISPW_Stream=$$stream$$&ISPW_Application=$$application$$&ISPW_Level=$$levels$$&SetId=$$setID$$&AssignmentId=$$assignment$$&ISPW_Release=$$release$$&Owner=$$owner$$
+ http://<<your jenkins server>>/job/<<you jenkins job>>/buildWithParameters?ISPW_Stream=$$stream$$&ISPW_Container=$$release$$&ISPW_Level=$$levels$$&SetId=$$setID$$&ISPW_Release=$$release$$&Owner=$$owner$$
  
  ISPW Webhook Parameter List below
  @param ISPW_Stream - ISPW Stream that had the code promotion
- @param ISPW_Application - ISPW Applciation that had the code promotion
+ @param ISPW_Container - ISPW Container that had the code promotion
  @param ISPW_Level - ISPW Level that code was promoted into
- @param AsssignmentId - ISPW assignment that contains the promoted code
  @param SetId - ISPW Set that was created for the promotion
  @param ISPW_Release - The ISPW Release Value that will be passed to XL Release
  @param Owner - The ISPW Owner value from the ISPW Set that was created for the promotion
@@ -127,8 +126,8 @@ node{
             componentType: '',                  // optional filter for component types in ISPW
             connectionId: "${HCI_Conn_ID}",     
             credentialsId: "${HCI_Token}",      
-            containerName: "${AssignmentId}",   
-            containerType: '0',                 // 0-Assignment 1-release 2-Set
+            containerName: "${ISPW_Container}",   
+            containerType: '1',                 // 0-Assignment 1-Release 2-Set
             ispwDownloadAll: false,             // false will not download files that exist in the workspace and haven't previous changed
             serverConfig: '',                   // ISPW runtime config.  if blank ISPW will use the default runtime config
             serverLevel: ''])                   // level to download the components from
