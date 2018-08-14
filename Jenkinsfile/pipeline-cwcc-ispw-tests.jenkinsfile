@@ -96,7 +96,7 @@ node{
         hlq: '', 
         connectionId: "${HCI_Conn_ID}",
         jcl: "Runner.jcl", 
-        projectFolder: "Demo_2018_08_1", 
+        projectFolder: "${ISPW_Application}\\Demo_2018_08_1", 
         testSuite: "CWBWCOBX_Scenario.testscenario", 
         useStubs: false])                    
 
