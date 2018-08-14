@@ -6,9 +6,7 @@ import groovy.json.JsonBuilder
 import groovy.json.JsonOutput
 import java.net.URL
 /**
- This is an example Jenkins Pipeline Script that runs a CI process against COBOL Code
-
- This Pipeline uses the following Jenkins Plugins
+ This is an example Jenkins Pipeline Script that runs a CI process against COBOL Code.  This Pipeline uses the following Jenkins Plugins
  Compuware Common Configuration Plugin - https://plugins.jenkins.io/compuware-common-configuration
  Compuware Source Code Download for Endevor, PDS, and ISPW Plugin - https://plugins.jenkins.io/compuware-scm-downloader
  Compuware Topaz for Total Test Plugin - https://plugins.jenkins.io/compuware-topaz-for-total-test
