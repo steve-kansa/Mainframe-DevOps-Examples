@@ -56,7 +56,7 @@ node{
         //}
     }*/
 
-    stage("Retrieve Code From ISPW")
+    /*stage("Retrieve Code From ISPW")
     {
         //Retrieve the code from ISPW that has been promoted 
         checkout([$class: 'IspwContainerConfiguration', 
@@ -68,12 +68,12 @@ node{
         ispwDownloadAll: false,
         serverConfig: '', 
         serverLevel: ''])
-    }
+    }*/
 
     stage("Retrieve Tests")
     {
         checkout([$class: 'IspwConfiguration', 
-        componentType: 'None', 
+        componentType: 'COPY, COB', 
         connectionId: "${HCI_Conn_ID}", 
         credentialsId: "${HCI_Token}", 
         folderName: 'Demo_2018_08_1', 
