@@ -1,3 +1,10 @@
+#!/usr/bin/env groovy
+import hudson.model.*
+import hudson.EnvVars
+import groovy.json.JsonSlurper
+import groovy.json.JsonBuilder
+import groovy.json.JsonOutput
+import java.net.URL
 /**
  This is an example Jenkins Pipeline Script that runs a CI process against COBOL Code
  
@@ -24,15 +31,6 @@
  SonarQube Scanner Plugin - https://plugins.jenkins.io/sonar
  XebiaLabs XL Release Plugin - https://plugins.jenkins.io/xlrelease-plugin
  */
-
-#!/usr/bin/env groovy
-import hudson.model.*
-import hudson.EnvVars
-import groovy.json.JsonSlurper
-import groovy.json.JsonBuilder
-import groovy.json.JsonOutput
-import java.net.URL
-
 /** 
     Pipeline Configuration Parameters
     Parameters defined here need to be defined upfront for the pipeline to execute. 
