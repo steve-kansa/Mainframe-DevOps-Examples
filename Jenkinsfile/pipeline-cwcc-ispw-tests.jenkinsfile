@@ -133,7 +133,7 @@ node{
                 SQ_TestResult = SQ_TestResult + "TTTSonar/" + it.name +  ','
             }
 
-            def SQ_Tests                = " -Dsonar.tests=tests ${SQ_TestResult} -Dsonar.coverageReportPaths=Coverage/CodeCoverage.xml"
+            def SQ_Tests                = " -Dsonar.tests=${ISPW_Application}\\Demo_2018_08_1 ${SQ_TestResult} -Dsonar.coverageReportPaths=Coverage/CodeCoverage.xml"
             def SQ_PullRequest          = " -Dsonar.branch.name=branch-${AssignmentId} -Dsonar.branch.target=master"
             def SQ_ProjectKey           = " -Dsonar.projectKey=${ISPW_Application} -Dsonar.projectName=${SQ_Project} -Dsonar.projectVersion=1.2"
             def SQ_Source               = " -Dsonar.sources=${ISPW_Application}\\MF_Source"
