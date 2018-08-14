@@ -57,15 +57,15 @@ import java.net.URL
 
  /** 
  Git Parameters
- @param Git_User - Github user account
+ @param Git_Project - Github user account
  @param Git_Credentials - jenkins credentials for logging into git
  @param Git_URL - url that will be used in various git commands
  @param Git_TTT_Repo - git repo that contains Topaz for Total Test Projects
  @param Git_Branch - git brnach to be used by the pipeline
  */
- String Git_User             = "steve-kansa"
+ String Git_Project          = "steve-kansa"
  String Git_Credentials      = "github"
- String Git_URL              = "https://github.com/${Git_User}"
+ String Git_URL              = "https://github.com/${Git_Project}"
  String Git_TTT_Repo         = "${ISPW_Stream}_${ISPW_Application}_Unit_Tests.git"
  String Git_Branch           = "master"
 
