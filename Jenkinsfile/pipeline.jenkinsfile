@@ -153,10 +153,10 @@ node{
                 println "*************************"
             
                 step([$class: 'TotalTestBuilder', 
-                    ccClearStats: false,
+                    ccClearStats: true,
                     ccRepo: "${CC_repository}",
                     ccSystem: "${ISPW_Application}", 
-                    ccTestId: "${JOB_NAME}",  //Jenkins environemnt variable, resolves to build number, i.e. #177 
+                    ccTestId: "${BUILD_NUMBER}",  //Jenkins environemnt variable, resolves to build number, i.e. #177 
                     credentialsId: "${HCI_Token}", 
                     deleteTemp: true, 
                     hlq: '', 
