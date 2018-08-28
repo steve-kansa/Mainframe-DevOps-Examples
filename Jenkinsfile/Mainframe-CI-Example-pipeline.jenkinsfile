@@ -55,7 +55,7 @@ import java.net.URL
  String Git_Credentials      = "github"
  String Git_URL              = "https://github.com/${Git_Project}"
  String Git_TTT_Repo         = "${ISPW_Stream}_${ISPW_Application}_Unit_Tests.git"
- String Git_Branch           = "master"
+ String Git_Branch           = "UT/CONS"
  String SQ_Scanner_Name      = "scanner" 
  String SQ_Server_Name       = "localhost"  
  String MF_Source            = "MF_Source"
@@ -291,21 +291,6 @@ node{
                 }
             }
     }
-    stage("Push Tag to Test Repo")
-    {
-        dir("tests")  // Need to work in the git repo's working tree
-        {
-            // Add a git tag for the ISPW SetId
-            bat(script: "git tag -a ${SetId} -m \"Tests run for SetId")
-
-            // Push changes and tag to the Remote Github repository 
-            withCredentials([usernamePassword(credentialsId: 'steve-kansa-github', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                stdout = bat(returnStdout: true, script: "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/steve-kansa/${Git_TTT_Repo} HEAD:master --tags")
-                echo "push" + stdout
-            }
-        }
-        
-    }
 
     stage("Commit to git"){
         
@@ -354,6 +339,18 @@ node{
             withCredentials([usernamePassword(credentialsId: 'steve-kansa-github', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                 stdout = bat(returnStdout: true, script: "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/steve-kansa/SXK1.git HEAD:master --tags")
                 echo "push" + stdout
+            }
+        }
+        dir("tests")  // Need to work in the git repo's working tree
+        {
+            // Add a git tag for the ISPW SetId
+            bat(script: "git tag -a ${SetId}2 -m \"Tests run for SetId")
+
+            // Push changes and tag to the Remote Github repository 
+            withCredentials([usernamePassword(credentialsId: 'steve-kansa-github', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                stdout = bat(returnStdout: true, script: "git push --force https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/steve-kansa/${Git_TTT_Repo} HEAD:master --tags")
+                echo "push" + stdout
+                stdout = bat(returnStdout: true, script: "git push --force https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/steve-kansa/${Git_TTT_Repo} HEAD:master --tags")
             }
         }
     }
