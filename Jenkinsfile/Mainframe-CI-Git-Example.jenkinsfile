@@ -22,7 +22,7 @@ import java.net.URL
  This Pipeline Requires the below Parameters to be defined in the Jenkins Job
  The Jenkins Parameters can be supplied by a ISPW Webhook by defining a webhook like the example below.  
  Please note that the assignment is not currently available in the webhook, but will be added in a future release.
- http://<<your jenkins server>>/job/<<you jenkins job>>/buildWithParameters?ISPW_Stream=$$stream$$&ISPW_Container=$$release$$&ISPW_Level=$$levels$$&SetId=$$setID$$&ISPW_Release=$$release$$&Owner=$$owner$$
+ http://<<your jenkins server>>/job/<<you jenkins job>>/buildWithParameters?ISPW_Stream=$$stream$$&ISPW_Container=$$release$$&ISPW_Level=$$level$$&SetId=$$setID$$&ISPW_Release=$$release$$&Owner=$$owner$$
  
  ISPW Webhook Parameter List below
  @param ISPW_Stream - ISPW Stream that had the code promotion
@@ -121,7 +121,7 @@ node{
     }*/
 
     /* 
-     This stage is used to retrieve source from ISPW
+     This stage is used to retieve source from ISPW
      */ 
     stage("Retrieve Code From ISPW")
     {
@@ -196,7 +196,6 @@ node{
                 println "Project " + TTTProjectName
                 println "*************************"
             
-
                 step([$class: 'TotalTestBuilder', 
                     ccClearStats: false,                // Clear out any existing Code Coverage stats for the given ccSystem and ccTestId
                     ccRepo: "${CC_repository}",
@@ -289,74 +288,9 @@ node{
                     echo "Pipeline aborted due to quality gate failure: ${qg.status}"
                     error "Exiting Pipeline" // Exit the pipeline with an error if the SonarQube Quality Gate is failing
                 }
-            }
-    }
-    stage("Push Tag to Test Repo")
-    {
-        dir("tests")  // Need to work in the git repo's working tree
-        {
-            // Add a git tag for the ISPW SetId
-            bat(script: "git tag -a ${SetId} -m \"Tests run for SetId")
-
-            // Push changes and tag to the Remote Github repository 
-            withCredentials([usernamePassword(credentialsId: 'steve-kansa-github', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                stdout = bat(returnStdout: true, script: "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/steve-kansa/${Git_TTT_Repo} HEAD:master --tags")
-                echo "push" + stdout
-            }
-        }
-        
+            }   
     }
 
-    stage("Commit to git"){
-        
-        Git_URL = "https://github.com/steve-kansa/SXK1"
-
-        // Retrieve the Source currently in Git to a directory in the Jenkins workspace
-        gitcheckout(Git_URL, Git_Branch, Git_Credentials, "gitsource")
-
-        dir("gitsource")  // Need to work in the git repo's working tree
-        {
-            // Now we need to add the files related to the ISPW set that was downloaded
-            def Cobolfiles = findFiles(glob: 'SXK1/MF_Source/*.cbl')    // find all the Cobol files
-            def Copybooks  = findFiles(glob: 'SXK1/MF_Source/*.cpy')    // find all the copybooks
-
-            Cobolfiles.each // Move each Cobol file to the git working tree
-            {
-                bat "xcopy /s /Y " + it.path + " gitsource\\MF_Source"
-            }
-            Copybooks.each // Move each Copybook file to the git working tree
-            {
-                bat "xcopy /s /Y " + it.path + " gitsource\\MF_Source"
-            }
-
-            // Prep to commit the changes into GitHub
-            bat(script: "git add .")  // Add the files to the git Index
-
-            // Set username and to ISPW Set Owner so GitHub tracks who promoted change
-            Email = Owner + "@compuware.com"
-            bat(script: "git config --global user.name ${Owner} \r\ngit config --global user.email ${Email}") 
-
-            // Commit changed files to local git repo
-            message = "Changes for SetID " + SetId + " from User: " + Owner
-            stdstatus = bat(returnStatus: true, script: "git commit -m \"${message}")
-
-            // Check to see if git detected changes, if no changes are detected, nothing further to do in this step, exit stage
-            if(stdstatus > 0){      
-                currentBuild.result = 'SUCCESS' // Set build to Success
-                echo "Set Already added to Github" 
-                return
-            }
-
-            // Add a git tag for the ISPW SetId
-            bat(script: "git tag -a ${SetId} -m \"Changes for SetId")
-
-            // Push changes and tag to the Remote Github repository 
-            withCredentials([usernamePassword(credentialsId: 'steve-kansa-github', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                stdout = bat(returnStdout: true, script: "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/steve-kansa/SXK1.git HEAD:master --tags")
-                echo "push" + stdout
-            }
-        }
-    }
     /* 
      This stage triggers a XL Release Pipeline that will move code into the high levels in the ISPW Lifecycle  
      */ 

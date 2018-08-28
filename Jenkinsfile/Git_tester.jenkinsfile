@@ -1,0 +1,182 @@
+#!/usr/bin/env groovy
+import hudson.model.*
+import hudson.EnvVars
+import groovy.json.JsonSlurper
+import groovy.json.JsonBuilder
+import groovy.json.JsonOutput
+import java.net.URL
+/**
+ This is an example Jenkins Pipeline Script that runs a CI process against COBOL Code.  This pipeline is designed to be triggered from ISPW 
+ on the promotion of code from a Test level in a controlled level.  The pipeline runs a series of quality checks on the 
+ promoted code to ensure that it meets the quality standards that an organization defined in SonarQube.
+ 
+ This Pipeline uses the following Jenkins Plugins
+ Compuware Common Configuration Plugin - https://plugins.jenkins.io/compuware-common-configuration
+ Compuware Source Code Download for Endevor, PDS, and ISPW Plugin - https://plugins.jenkins.io/compuware-scm-downloader
+ Compuware Topaz for Total Test Plugin - https://plugins.jenkins.io/compuware-topaz-for-total-test
+ Compuware Xpediter Code Coverage Plugin - https://plugins.jenkins.io/compuware-xpediter-code-coverage
+ Pipeline Utilities Plugin - https://plugins.jenkins.io/pipeline-utility-steps
+ SonarQube Scanner Plugin - https://plugins.jenkins.io/sonar
+ XebiaLabs XL Release Plugin - https://plugins.jenkins.io/xlrelease-plugin
+ 
+ This Pipeline Requires the below Parameters to be defined in the Jenkins Job
+ The Jenkins Parameters can be supplied by a ISPW Webhook by defining a webhook like the example below.  
+ Please note that the assignment is not currently available in the webhook, but will be added in a future release.
+ http://<<your jenkins server>>/job/<<you jenkins job>>/buildWithParameters?ISPW_Stream=$$stream$$&ISPW_Container=$$release$$&ISPW_Level=$$level$$&SetId=$$setID$$&ISPW_Release=$$release$$&Owner=$$owner$$
+ 
+ ISPW Webhook Parameter List below
+ @param ISPW_Stream - ISPW Stream that had the code promotion
+ @param ISPW_Container - ISPW Container that had the code promotion
+ @param ISPW_Level - ISPW Level that code was promoted from
+ @param SetId - ISPW Set that was created for the promotion
+ @param ISPW_Release - The ISPW Release Value that will be passed to XL Release
+ @param Owner - The ISPW Owner value from the ISPW Set that was created for the promotion
+
+ The Pipeline also takes the following parameters from the Jenkins Job
+ @param CES_Token - CES Personal Access Token.  These are configured in Compuware Enterprise Services / Security / Personal Access Tokens 
+ @param HCI_Conn_ID - HCI Connection ID configured in the Compuware Common Configuration Plugin.  Use Pipepline Syntax Generator to determine this value. 
+ @param HCI_Token - The ID of the Jenkins Credential for the TSO ID that will used to execute the pipeline
+ @param CES_Connection - The URL of Compuware Enterprise Services
+ @param CC_repository - The Compuware Xpediter Code Coverage Repository that the Pipeline will use
+ @param Git_Project - Github project/user used to store the Topaz for Total Test Projects
+*/
+/**
+ Below is a list of parameters that is hardcoded into the Pipeline
+ @param Git_Credentials - Jenkins credentials for logging into git
+ @param Git_URL - Url that will be used in various git commands
+ @param Git_TTT_Repo - Git repo that contains Topaz for Total Test Projects
+ @param Git_Branch - Git brnach to be used by the pipeline
+ @param SQ_Scanner_Name - Name of SonarQube Scanner installation in "Manage Jenkins" -> "Global Tool Configuration" -> "SonarQube Scanner Installations"
+ @param SQ_Server_Name - Name of SonarQube Server in "Manage Jenkins" -> "Configure System" -> "Sonar Qube servers"
+ @param MF_Source - directory that contains cobol source downloaded from ISPW
+ @param XLR_Template - XL Release template to trigger at the end of the Jenkins workflow
+ @param XLR_User - XL Release user ID. Configured in Jenkins/Manage Jenkins/Configure System/XL Release credentials
+*/
+ String Git_Credentials      = "github"
+ //String Git_URL              = "https://github.com/${Git_Project}"
+ String Git_TTT_Repo         = "${ISPW_Stream}_${ISPW_Application}_Unit_Tests.git"
+ String Git_Branch           = "master"
+ String SQ_Scanner_Name      = "scanner" 
+ String SQ_Server_Name       = "localhost"  
+ String MF_Source            = "MF_Source"
+ String XLR_Template         = "A Release from Jenkins"
+ String XLR_User	         = "admin"	
+		 
+/**
+ Helper Methods for the Pipeline Script
+*/
+
+// Add whichever params you think you'd most want to have
+// replace the slackURL below with the hook url provided by
+// slack when you configure the webhook
+def notifySlack(text, channel) {
+def slackURL = 'https://hooks.slack.com/services/xxxxxxx/yyyyyyyy/zzzzzzzzzz'
+def payload = JsonOutput.toJson([text      : text,
+                    channel   : channel,
+                    username  : "jenkins",
+                    icon_emoji: ":jenkins:"])
+sh "curl -X POST --data-urlencode \'payload=${payload}\' ${slackURL}"
+}
+
+
+
+
+/**
+ Wrapper around the Git Plugin's Checkout Method
+ @param URL - URL for the git server
+ @param Branch - The branch that will be checked out of git
+ @param Credentials - Jenkins credentials for logging into git
+ @param Folder - Folder relative to the workspace that git will check out files into
+*/
+ def gitcheckout(String URL, String Branch, String Credentials, String Folder)
+ {
+        println "Scenario " + URL
+        println "Scenario " + Branch
+        println "Scenario " + Credentials
+        checkout changelog: false, poll: false, 
+        scm: [$class: 'GitSCM', 
+        branches: [[name: "*/${Branch}"]], 
+        doGenerateSubmoduleConfigurations: false, 
+        extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: "${Folder}"], 
+        [$class: 'LocalBranch', localBranch: 'local']], 
+        submoduleCfg: [], 
+        userRemoteConfigs: [[credentialsId: "${Credentials}", name: 'origin', url: "${URL}"]]]
+ }
+
+/* 
+  Node is a required part of the Jenkins pipeline for any steps to be executed
+*/ 
+node{
+    /* 
+     This stage is used to retieve source from ISPW
+     */ 
+    stage("Retrieve Code From ISPW")
+    {
+            //Retrieve the code from ISPW that has been promoted 
+            checkout([$class: 'IspwContainerConfiguration', 
+            componentType: '',                  // optional filter for component types in ISPW
+            connectionId: "${HCI_Conn_ID}",     
+            credentialsId: "${HCI_Token}",      
+            containerName: "${SetId}",   
+            containerType: '2',                 // 0-Assignment 1-Release 2-Set
+            ispwDownloadAll: false,             // false will not download files that exist in the workspace and haven't previous changed
+            serverConfig: '',                   // ISPW runtime config.  if blank ISPW will use the default runtime config
+            serverLevel: ''])                   // level to download the components from
+    }
+
+    /* 
+     This stage pushes the changed code from ISPW into a GitHub repo  
+     */ 
+    stage("Commit to git"){
+        
+        Git_URL = "https://github.com/steve-kansa/SXK1"
+
+        gitcheckout(Git_URL, Git_Branch, Git_Credentials, "gitsource")
+
+        def Cobolfiles = findFiles(glob: 'SXK1/MF_Source/*.cbl')
+        def Copybooks  = findFiles(glob: 'SXK1/MF_Source/*.cpy')
+
+        Cobolfiles.each
+        {
+            echo "Copying ${it.path}"
+            bat "xcopy /s /Y " + it.path + " gitsource\\MF_Source"
+        }
+        Copybooks.each
+        {
+            echo "Copying ${it.path}"
+            bat "xcopy /s /Y " + it.path + " gitsource\\MF_Source"
+        }
+        
+        dir("gitsource")
+        {
+            stdout = bat(returnStdout: true, script: "git add .")
+            echo stdout
+
+            message = "Changes for SetID " + SetId + " from User: " + Owner
+        
+            stdout = bat(returnStdout: true, script: "git config --global user.name ${Owner}")
+            echo stdout
+
+            Owner = Owner + "@compuware.com"
+            stdout = bat(returnStdout: true, script: "git config --global user.email ${Owner}")
+            echo stdout
+
+            stdout = commitChangeset = bat(returnStdout: true, script: 'git diff')
+            echo commitChangeset
+
+            shortCommit = bat(returnStdout: true, script: "git log -n 1 -p)
+            echo shortCommit
+
+            stdout = bat(returnStdout: true, script: "git commit -m \"${message}")
+            echo stdout
+
+            stdout = bat(returnStdout: true, script: "git tag -a ${SetId} -m \"Changes for SetId")
+            echo stdout    
+
+            withCredentials([usernamePassword(credentialsId: 'steve-kansa-github', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                stdout = bat(returnStdout: true, script: "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/steve-kansa/SXK1.git HEAD:master --tags")
+                echo stdout
+            }
+        }
+    }
+}
