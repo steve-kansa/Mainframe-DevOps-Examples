@@ -100,13 +100,7 @@ import java.net.URL
   Node is a required part of the Jenkins pipeline for any steps to be executed
 */ 
 node{
-    println "Received following values from ISPW Webhook"
-    println "ISPW_Stream: " + ISPW_Stream
-    println "ISPW_Container: " + ISPW_Container
-    println "ISPW_Level: " + ISPW_Level
-    println "SetId: " + SetId
-    println "ISPW_Release: " + ISPW_Release
-    println "Owner: " + Owner
+    echo "Received following values from ISPW Webhook\nISPW_Stream: ${ISPW_Stream}\nISPW_Container: ${ISPW_Container}\nISPW_Level: ${ISPW_Level}\nSetId: ${SetId}\nISPW_Release: ${ISPW_Release}\nOwner: ${Owner}"
 
     // Determine the current ISPW Path and Level that the code Promotion is from
     def PathNum = getPathNum(ISPW_Level)
@@ -299,7 +293,7 @@ node{
                 }
             }
     }
-
+        /*
     stage("Commit to git"){
         
         Git_URL = "https://github.com/steve-kansa/SXK1"
