@@ -142,7 +142,7 @@ node{
     /* 
      This stage is used to retieve Topaz for Total Tests from Git
      */ 
-    stage("Retrieve Tests")
+    stage("Stage Test Data With File-Aid")
     {
         //Retrieve the Tests from Github that match that ISPWW Stream and Application
         Git_URL = "${Git_URL}/${Git_TTT_Repo}"
@@ -174,7 +174,7 @@ node{
     /* 
      This stage executes any Total Test Projects related to the mainframe source that was downloaded
      */ 
-    stage("Execute related Unit Tests")
+    stage("Execute related Tests")
     {
         // Loop through all downloaded Topaz for Total Test scenarios
         TTTListOfScenarios.each
