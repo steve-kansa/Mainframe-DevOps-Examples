@@ -164,7 +164,7 @@ node{
             stdout = commitChangeset = bat(returnStdout: true, script: 'git diff')
             echo commitChangeset
 
-            shortCommit = bat(returnStdout: true, script: "git log -n 1 -p)
+            shortCommit = bat(returnStdout: true, script: "git log -n 1 -p")
             echo shortCommit
 
             stdout = bat(returnStdout: true, script: "git commit -m \"${message}")
