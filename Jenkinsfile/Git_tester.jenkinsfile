@@ -174,7 +174,7 @@ node{
             echo stdout    
 
             withCredentials([usernamePassword(credentialsId: 'steve-kansa-github', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                stdout = bat(returnStdout: true, script: "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/steve-kansa/SXK1.git HEAD:master --tags")
+                stdout = bat(returnStdout: true, script: "git push https://steve-kansa:Compuware2018@github.com/steve-kansa/SXK1.git HEAD:master --tags")
                 echo stdout
             }
         }
