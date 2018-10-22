@@ -1,0 +1,54 @@
+node{
+    stage("SubmitJclMembers")
+    {
+        //Submit the JCL via the Topaz Utilities Plugin
+        topazSubmitJclMembers connectionId: '196de681-04d7-4170-824f-09a5457c5cda', 
+        credentialsId: 'pfhsxk0cwcc', 
+        jclMember: 'SALESSUP.SXK1.PRD.JOB(CWBWJCLC)',
+        maxConditionCode: '4'
+    }
+    stage("SubmitFreeFormJCL")
+    {  
+        //Build the JCL in Jenkins
+        JCLStatements   = "//  MSGCLASS=X,MSGLEVEL=(1,1),NOTIFY=&SYSUID"
+                        + "/*JOBPARM S=CWCC"
+                        + "//CWXTCOB  EXEC PGM=CWBWCOBX,PARM=\'00003,180110\'"
+                        + "//STEPLIB  DD   DSN=CEE.SCEERUN,DISP=SHR"
+                        + "//         DD   DISP=SHR,DSN=SALESSUP.SXK1.PRD.LOAD"
+                        + "//EMPFILE  DD   DSN=SYS2.CW.&CWGAXT..SLXTSAMP(CWXTDATA),"
+                        + "//         DISP=SHR"
+                        + "//RPTFILE  DD   SYSOUT=X"
+                        + "//SYSOUT   DD   SYSOUT=X"
+                        + "//"
+
+        //Submit the JCL via the Topaz Utilities Plugin
+        topazSubmitFreeFormJcl connectionId: '196de681-04d7-4170-824f-09a5457c5cda', 
+        credentialsId: 'pfhsxk0cwcc', 
+        jcl: JCLStatements,   // JCL in static text specified in Jenkins Pipeline
+        maxConditionCode: '4'
+
+    }
+    stage("SubmitFreeFormJCL with substitution ")
+    {
+        def substitutionvalue = "SALESSUP.SXK1.PRD.LOAD"
+
+        //Build the JCL in Jenkins
+        JCLStatements << "//  MSGCLASS=X,MSGLEVEL=(1,1),NOTIFY=&SYSUID"
+        JCLStatements << "/*JOBPARM S=CWCC"
+        JCLStatements << "//CWXTCOB  EXEC PGM=CWBWCOBX,PARM=\'00003,180110\'"
+        JCLStatements << "//STEPLIB  DD   DSN=CEE.SCEERUN,DISP=SHR"
+        JCLStatements << "//         DD   DISP=SHR,DSN=${substitutionvalue}"
+        JCLStatements << "//EMPFILE  DD   DSN=SYS2.CW.&CWGAXT..SLXTSAMP(CWXTDATA),"
+        JCLStatements << "//         DISP=SHR"
+        JCLStatements << "//RPTFILE  DD   SYSOUT=X"
+        JCLStatements << "//SYSOUT   DD   SYSOUT=X"
+        JCLStatements << "//"
+        JCLStatements.join("\n")
+
+        //Submit the JCL via the Topaz Utilities Plugin
+        topazSubmitFreeFormJcl connectionId: '196de681-04d7-4170-824f-09a5457c5cda', 
+        credentialsId: 'cwcc', 
+        jcl: JCLStatements,  // JCL in text specified in Jenkins Pipeline that included a variable that could be substituted for a different value in the pipeline
+        maxConditionCode: '4'
+    }
+}
