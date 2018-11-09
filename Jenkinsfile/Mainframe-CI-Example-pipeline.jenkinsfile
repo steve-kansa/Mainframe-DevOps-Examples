@@ -377,10 +377,5 @@ node{
             [[propertyName:'ISPW_Dev_level', propertyValue: "${ISPW_Target_Level}"], // Level in ISPW that the Code resides currently
             [propertyName: 'ISPW_RELEASE_ID', propertyValue: "${ISPW_Release}"],     // ISPW Release value from the ISPW Webhook
             [propertyName: 'CES_Token', propertyValue: "${CES_Token}"]]
-<<<<<<< HEAD
     }*/
 }
-=======
-    }
-}
->>>>>>> 24b93240c14fa0db13a545d72d248a02299be9bc
