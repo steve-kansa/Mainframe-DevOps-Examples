@@ -13,23 +13,20 @@ def filetype = ["cbl", "jcl", "cpy", "clist"]
 		 
 def runCommand(cmd, workspacedir) 
 {
-    def exists = fileExists "${workspacedir}\\output.txt"
+    def exists = fileExists "output.txt"
 
     if (exists) {
-        bat(returnStatus:true , script: "del ${workspacedir}\\output.txt")
+        //echo "Deleting File"
+        sh(returnStatus:true , script: "#!/bin/sh -e\n rm -f output.txt")
     } 
-    
-    cmd = cmd + " > ${workspacedir}\\output.txt"
-       
-    if (isUnix()){
-         return sh(returnStatus:true , script: '#!/bin/sh -e\n' + cmd).trim()
-     } else{
-       status = bat(returnStatus:true , script: cmd)
-       //echo "Command Returned Status: " + status
-       output = readFile "${workspacedir}\\output.txt"
-       //echo "Command Output: " + output
-       return status
-    } 
+    //echo "Workspace is->" + workspacedir
+    cmd = cmd + " > output.txt"
+    //echo "Command->" + cmd
+    status = sh(returnStatus:true , script: '#!/bin/sh -e\n' + cmd)
+    //echo "Command Returned Status: " + status
+    output = readFile "output.txt"
+    //echo "Command Output: " + output
+    return status
 }
 
  def gitcheckout(String URL, String Branch, String Credentials, String Folder)
@@ -63,14 +60,6 @@ node{
         {
             println("Determining changed files")
             changes = sh(returnStdout: true, script: "#!/bin/sh -e\n git log -n 1 --name-status | grep -E ^[AMD][[:space:]] | sort | uniq")
-            //println("Determining deleted files")
-            //deletedFiles = sh(returnStdout: true, script: "#!/bin/sh -e\n git log -n 1 --name-status | grep -E ^D[[:space:]] | sort | uniq")
-            //println("Determining added files")
-            //addedFiles = sh(returnStdout: true, script: "#!/bin/sh -e\n git log -n 1  --name-status | grep -E ^A[[:space:]] | sort | uniq")
-            //println("Determining added files")
-            //renamedFiles = sh(returnStdout: true, script: "#!/bin/sh -e\n git log -n 1 --name-status | grep -E ^R[[:space:]] | sort | uniq")
-            //println("Determining added files")
-            //copiedFiles = sh(returnStdout: true, script: "#!/bin/sh -e\n git log -n 1 --name-status | grep -E ^C[[:space:]] | sort | uniq")
         }
         echo "Retrieved changes files from git"
         filetype.each{
@@ -83,7 +72,7 @@ node{
         changeslist = changes.split('\n')
 
         println "Processing Changes"
-        modifiedfile = changeslist.findAll { item -> item.startsWith('A') }
+        modifiedfile = changeslist.findAll { item -> item.startsWith('M') }
         addedfile = changeslist.find { item -> item.startsWith('A') }
         deletedfile = changeslist.find { item -> item.startsWith('D') }
 
@@ -99,12 +88,15 @@ node{
             //echo it
             file = it.substring(2)
             filename = file.split("/")
-            member = filename[2].split("\\.")
+            position = filename.size() -1
+            member = filename[position].split("\\.")
             membertype = member[1]
             membername = member[0]
-            //echo "Member Type->${membertype}\nMember->${membername}\nFile->${file}\n"
+            echo "Member Type->${membertype}\nMember->${membername}\nFile->${file}\n"
 
             cmd = cmd + "cp gitsource/${file} ./ftp/${membertype}/${membername}\n"
+            runCommand(cmd, workspacedir) 
+
             if(membertype == "cbl"){
                 //echo "Adding Cobol->" + membername
                 cobollmembers.add("${membername}")
@@ -120,49 +112,42 @@ node{
         }
         echo "adding tasks in ispw"
         cobollmembers.each{
+             // def ISPWAPI = 'http://cwcc:2020/ispw/connectionName/assignments/SXK1000024/tasks/add?checkout=true'
+             def payload = JsonOutput.toJson([application      : "SXK1",
+                                             checkoutFromLevel   : "PRD",
+                                             owner  : "PFHSXK0",
+                                             path  : "DEV1",
+                                             stream  : "FTSDEMO",
+                                             taskName  : "${it}",
+                                             type  : "COB"])
+            cmd = "curl -m 7 -s -X POST 'http://cwcc:2020/ispw/ispw/assignments/SXK1000024/task/add?checkout=true' -H 'Authorization: f06cbdf8-5273-4664-8c54-1dc21cc8f3d9' -H 'Content-Type: application/json' -d '${payload}'"
+            //echo "curl->" + cmd
+
+            status = runCommand(cmd, workspacedir) 
+            if (status > 1){
+                println "Error processing REST API Call"
+                currentBuild.result = 'FAILURE' // Set build to Success
+                exit
+                
+            }
+            echo "Added task->${it}"
             
-    cmd = '''#!/bin/sh -e\n curl --request POST --url 'http://cwcc:2020/ispw/connectionName/assignments/SXK1000024/task/add?checkout=true'
---header 'Authorization: d01c2aa5-5ee9-4d95-8368-7a5effd6e79f'
---header 'Content-Type: application/json'
---data '{
-  "application": "SXK1",
-  "checkoutFromLevel": "PRD",
-	"runtimeConfiguration": "ISPW",
-  "owner": "PFHSXK0",
-  "path": "DEV1",
-  "stream": "FTSDEMO",
-  "taskName": "TREXX01",
-  "type": "CLST"
-}'''
-
-    //cmd = "#!/bin/sh -e\n curl -X GET -s --url 'http://cwcc:2020/ispw/connectionName/assignments/SXK1000024/tasks' -H 'Content-Type: application/json' -H 'Authorization: d01c2aa5-5ee9-4d95-8368-7a5effd6e79f'"
-    //output = sh(returnStdout: true, script: cmd)
-    //echo output
-
-    def ISPWAPI = 'http://cwcc:2020/ispw/connectionName/assignments/SXK1000024/tasks/add?checkout=true'
-    def payload = JsonOutput.toJson([application      : "SXK1",
-                                     runtimeConfiguration  : "ISPW",
-                                     checkoutFromLevel   : "PRD",
-                                     owner  : "PFHSXK0",
-                                     path  : "DEV1",
-                                     stream  : "FTSDEMO",
-                                     taskName  : "TPROG01",
-                                     type  : "COB"])
-    cmd = "#!/bin/sh -e\n curl -s --request POST --url '${ISPWAPI}'--data '${payload}\' -H 'Content-Type: application/json' -H 'Authorization: d01c2aa5-5ee9-4d95-8368-7a5effd6e79f'"
-    output = sh(returnStdout: true, script: cmd)
-    echo output
-
-    }
-
-        echo cmd
-        sh(returnStdout: true, script: cmd)
-
-
+        }
+        echo "Moving files to Mainframe"
         filetype.each{
             dir("ftp/${it}")
             {
                 if (it == "jcl"){
                     ISPWdirectory = '''\'SALESSUP.SXK1.DEV1.JOB\''''
+                    ftpPublisher alwaysPublishFromMaster: false, continueOnError: false, failOnError: false, 
+                    publishers: [[configName: 'cwcc', 
+                    transfers: [[asciiMode: true, cleanRemote: false, excludes: '', flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+', 
+                    remoteDirectory: ISPWdirectory, 
+                    remoteDirectorySDF: false, removePrefix: '', sourceFiles: '*']], 
+                    usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: true]]
+                }
+                if (it == "cbl"){
+                    ISPWdirectory = '''\'SALESSUP.SXK1.DEV1.COB\''''
                     ftpPublisher alwaysPublishFromMaster: false, continueOnError: false, failOnError: false, 
                     publishers: [[configName: 'cwcc', 
                     transfers: [[asciiMode: true, cleanRemote: false, excludes: '', flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+', 
