@@ -96,7 +96,7 @@ node{
         clistmembers = []
 
         modifiedfile.each{
-            echo it
+            //echo it
             file = it.substring(2)
             filename = file.split("/")
             member = filename[2].split("\\.")
@@ -106,15 +106,15 @@ node{
 
             cmd = cmd + "cp gitsource/${file} ./ftp/${membertype}/${membername}\n"
             if(membertype == "cbl"){
-                echo "Adding Cobol->" + membername
+                //echo "Adding Cobol->" + membername
                 cobollmembers.add("${membername}")
             }
             else if(membertype == "jcl"){
-                echo "Adding JOB->" + membername
+                //echo "Adding JOB->" + membername
                 jclmembers.add("${membername}")
             }
             else if(membertype == "clist"){
-                echo "Adding CLIST->" + membername
+                //echo "Adding CLIST->" + membername
                 clistmembers.add("${membername}")
             }
         }
@@ -135,14 +135,23 @@ node{
   "type": "CLST"
 }'''
 
-    def ISPWAPI = 'http://cwcc:2020/ispw/connectionName/assignments/SXK1000024/task/add?checkout=true'
-    def payload = JsonOutput.toJson([text      : text,
-                                     channel   : channel,
-                                     username  : "jenkins",
-                                     icon_emoji: ":jenkins:"])
-    cmd = "'#!/bin/sh -e\n curl -X POST --data-urlencode \'payload=${payload}\' ${ISPWAPI} -H 'Content-Type: application/json' -H 'Authorization: d01c2aa5-5ee9-4d95-8368-7a5effd6e79f'"
+    //cmd = "#!/bin/sh -e\n curl -X GET -s --url 'http://cwcc:2020/ispw/connectionName/assignments/SXK1000024/tasks' -H 'Content-Type: application/json' -H 'Authorization: d01c2aa5-5ee9-4d95-8368-7a5effd6e79f'"
+    //output = sh(returnStdout: true, script: cmd)
+    //echo output
+
+    def ISPWAPI = 'http://cwcc:2020/ispw/connectionName/assignments/SXK1000024/tasks/add?checkout=true'
+    def payload = JsonOutput.toJson([application      : "SXK1",
+                                     runtimeConfiguration  : "ISPW",
+                                     checkoutFromLevel   : "PRD",
+                                     owner  : "PFHSXK0",
+                                     path  : "DEV1",
+                                     stream  : "FTSDEMO",
+                                     taskName  : "TPROG01",
+                                     type  : "COB"])
+    cmd = "#!/bin/sh -e\n curl -s --request POST --url '${ISPWAPI}'--data '${payload}\' -H 'Content-Type: application/json' -H 'Authorization: d01c2aa5-5ee9-4d95-8368-7a5effd6e79f'"
     output = sh(returnStdout: true, script: cmd)
     echo output
+
     }
 
         echo cmd
