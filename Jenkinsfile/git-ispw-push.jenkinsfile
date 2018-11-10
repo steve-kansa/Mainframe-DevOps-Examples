@@ -7,8 +7,9 @@ import groovy.json.JsonOutput
 import java.net.URL
 
 
- String Git_Credentials      = "github"
- String Git_Branch           = "master"
+String Git_Credentials      = "github"
+String Git_Branch           = "master"
+def filetype = ["cbl", "jcl", "cpy", "clist"]
 		 
 def runCommand(cmd, workspacedir) 
 {
@@ -60,18 +61,42 @@ node{
         
         dir("gitsource")
         {
-            modifiedFiles = sh(returnStdout: true, script: "#!/bin/sh -e\n git log -n 1 --name-status | grep -E ^M[[:space:]] | sort | uniq")
-            deletedFiles = sh(returnStdout: true, script: "#!/bin/sh -e\n git log -n 1 --name-status | grep -E ^D[[:space:]] | sort | uniq")
-            addedFiles = sh(returnStdout: true, script: "#!/bin/sh -e\n git log -n 1  --name-status | grep -E ^A[[:space:]] | sort | uniq")
-            renamedFiles = sh(returnStdout: true, script: "#!/bin/sh -e\n git log -n 1 --name-status | grep -E ^R[[:space:]] | sort | uniq")
-            copiedFiles = sh(returnStdout: true, script: "#!/bin/sh -e\n git log -n 1 --name-status | grep -E ^C[[:space:]] | sort | uniq")
+            println("Determining changed files")
+            changes = sh(returnStdout: true, script: "#!/bin/sh -e\n git log -n 1 --name-status | grep -E ^[AMD][[:space:]] | sort | uniq")
+            //println("Determining deleted files")
+            //deletedFiles = sh(returnStdout: true, script: "#!/bin/sh -e\n git log -n 1 --name-status | grep -E ^D[[:space:]] | sort | uniq")
+            //println("Determining added files")
+            //addedFiles = sh(returnStdout: true, script: "#!/bin/sh -e\n git log -n 1  --name-status | grep -E ^A[[:space:]] | sort | uniq")
+            //println("Determining added files")
+            //renamedFiles = sh(returnStdout: true, script: "#!/bin/sh -e\n git log -n 1 --name-status | grep -E ^R[[:space:]] | sort | uniq")
+            //println("Determining added files")
+            //copiedFiles = sh(returnStdout: true, script: "#!/bin/sh -e\n git log -n 1 --name-status | grep -E ^C[[:space:]] | sort | uniq")
         }
-        echo "retrieved changes files from git"
-        println "Processing added files
-        "
-        buf = addedFiles.split('\n') //TODO need to make sure the list of files doesn't contain a blank item or substring below fails
+        echo "Retrieved changes files from git"
+        filetype.each{
+            cmd = sh(returnStdout: true, script: "#!/bin/sh -e\n mkdir -p ./ftp/${it} \n")
+            echo "Created directory for: " + it       
+        }
+        println "Processing changed files"
+        echo changes
+        
+        changeslist = changes.split('\n')
 
-        buf.each{
+        println "Processing Changes"
+        modifiedfile = changeslist.findAll { item -> item.startsWith('A') }
+        addedfile = changeslist.find { item -> item.startsWith('A') }
+        deletedfile = changeslist.find { item -> item.startsWith('D') }
+
+        echo "Processing Modified Files"
+
+        cmd = "#!/bin/sh -e\n "
+
+        cobollmembers = []
+        jclmembers = []
+        clistmembers = []
+
+        modifiedfile.each{
+            echo it
             file = it.substring(2)
             filename = file.split("/")
             member = filename[2].split("\\.")
@@ -79,25 +104,64 @@ node{
             membername = member[0]
             //echo "Member Type->${membertype}\nMember->${membername}\nFile->${file}\n"
 
-            if(membertype == "jcl")
-            {
-            cmd = "#!/bin/sh -e\n mkdir -p ./ftp/jcl | cp gitsource/${file} ./ftp/jcl/${membername}"
-            //echo cmd
-            sh(returnStdout: true, script: cmd)
+            cmd = cmd + "cp gitsource/${file} ./ftp/${membertype}/${membername}\n"
+            if(membertype == "cbl"){
+                echo "Adding Cobol->" + membername
+                cobollmembers.add("${membername}")
             }
-
-
-
+            else if(membertype == "jcl"){
+                echo "Adding JOB->" + membername
+                jclmembers.add("${membername}")
+            }
+            else if(membertype == "clist"){
+                echo "Adding CLIST->" + membername
+                clistmembers.add("${membername}")
+            }
         }
+        echo "adding tasks in ispw"
+        cobollmembers.each{
             
-        dir("ftp/jcl")
-        {
-            ftpPublisher alwaysPublishFromMaster: false, continueOnError: false, failOnError: false, 
-            publishers: [[configName: 'cwcc', 
-            transfers: [[asciiMode: true, cleanRemote: false, excludes: '', flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+', 
-            remoteDirectory: '''\'SALESSUP.SXK1.DEV1.COB\'''', 
-            remoteDirectorySDF: false, removePrefix: '', sourceFiles: '*']], 
-            usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: true]]
+    cmd = '''#!/bin/sh -e\n curl --request POST --url 'http://cwcc:2020/ispw/connectionName/assignments/SXK1000024/task/add?checkout=true'
+--header 'Authorization: d01c2aa5-5ee9-4d95-8368-7a5effd6e79f'
+--header 'Content-Type: application/json'
+--data '{
+  "application": "SXK1",
+  "checkoutFromLevel": "PRD",
+	"runtimeConfiguration": "ISPW",
+  "owner": "PFHSXK0",
+  "path": "DEV1",
+  "stream": "FTSDEMO",
+  "taskName": "TREXX01",
+  "type": "CLST"
+}'''
+
+    def ISPWAPI = 'http://cwcc:2020/ispw/connectionName/assignments/SXK1000024/task/add?checkout=true'
+    def payload = JsonOutput.toJson([text      : text,
+                                     channel   : channel,
+                                     username  : "jenkins",
+                                     icon_emoji: ":jenkins:"])
+    cmd = "'#!/bin/sh -e\n curl -X POST --data-urlencode \'payload=${payload}\' ${ISPWAPI} -H 'Content-Type: application/json' -H 'Authorization: d01c2aa5-5ee9-4d95-8368-7a5effd6e79f'"
+    output = sh(returnStdout: true, script: cmd)
+    echo output
+    }
+
+        echo cmd
+        sh(returnStdout: true, script: cmd)
+
+
+        filetype.each{
+            dir("ftp/${it}")
+            {
+                if (it == "jcl"){
+                    ISPWdirectory = '''\'SALESSUP.SXK1.DEV1.JOB\''''
+                    ftpPublisher alwaysPublishFromMaster: false, continueOnError: false, failOnError: false, 
+                    publishers: [[configName: 'cwcc', 
+                    transfers: [[asciiMode: true, cleanRemote: false, excludes: '', flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+', 
+                    remoteDirectory: ISPWdirectory, 
+                    remoteDirectorySDF: false, removePrefix: '', sourceFiles: '*']], 
+                    usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: true]]
+                }
+            }
         }
     }
 } 
