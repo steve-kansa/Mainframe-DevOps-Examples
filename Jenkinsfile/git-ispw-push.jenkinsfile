@@ -9,7 +9,7 @@ import java.net.URL
 
 String Git_Credentials      = "github"
 String Git_Branch           = "master"
-def filetype = ["cbl", "jcl", "cpy", "clist"]
+def filetype = ["cbl", "jcl", "cpy"]
 		 
 def runCommand(cmd, workspacedir) 
 {
@@ -29,20 +29,131 @@ def runCommand(cmd, workspacedir)
     return status
 }
 
- def gitcheckout(String URL, String Branch, String Credentials, String Folder)
- {
-        println "Scenario " + URL
-        println "Scenario " + Branch
-        println "Scenario " + Credentials
-        checkout changelog: false, poll: false, 
-        scm: [$class: 'GitSCM', 
-        branches: [[name: "*/${Branch}"]], 
-        doGenerateSubmoduleConfigurations: false, 
-        extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: "${Folder}"], 
-        [$class: 'LocalBranch', localBranch: 'local']], 
-        submoduleCfg: [], 
-        userRemoteConfigs: [[credentialsId: "${Credentials}", name: 'origin', url: "${URL}"]]]
- }
+def ispwApi(member, type, api){
+    echo "ISPW API ${member}-${type}-${api}"
+    add = type =~ /add/
+    load = type =~ /load/
+    delete = type =~ /delete/
+    if (add){
+        echo "inside add"
+        def payload = JsonOutput.toJson([application: "SXK1",
+                                    checkoutFromLevel: "PRD",
+                                    owner  : "PFHSXK0",
+                                    path  : "DEV1",
+                                    stream  : "FTSDEMO",
+                                    taskName  : "${it}",
+                                    type  : "${type}"])
+        cmd = "curl -m 7 -s -X POST 'http://cwcc:2020/ispw/ispw/assignments/SXK1000024/task/add?checkout=true' -H 'Authorization: f06cbdf8-5273-4664-8c54-1dc21cc8f3d9' -H 'Content-Type: application/json' -d '${payload}'"
+        echo "curl->" + cmd
+
+        status = runCommand(cmd, workspacedir) 
+        if (status > 1){
+            println "Error processing REST API Call"
+            currentBuild.result = 'FAILURE' // Set build to Success
+            exit
+            
+        }
+        echo "Added ${type} task->${it}"
+    }
+    if (load){
+        def payload = JsonOutput.toJson([application: "SXK1",
+                                    currentLevel   : "DEV1",
+                                    startingLevel   : "DEV1",
+                                    path  : "DEV1",
+                                    stream  : "FTSDEMO",
+                                    moduleName  : "${it}",
+                                    moduletype  : "${type}"])
+        cmd = "curl -m 7 -s -X POST 'http://cwcc:2020/ispw/ispw/assignments/SXK1000024/task/' -H 'Authorization: f06cbdf8-5273-4664-8c54-1dc21cc8f3d9' -H 'Content-Type: application/json' -d '${payload}'"
+        //echo "curl->" + cmd
+
+        status = runCommand(cmd, workspacedir) 
+        if (status > 1){
+            println "Error processing REST API Call"
+            currentBuild.result = 'FAILURE' // Set build to Success
+            exit
+            
+        }
+        echo "Loaded ${type} task->${it}"
+    }
+    if (delete){
+             def payload = JsonOutput.toJson([application      : "SXK1",
+                                    action: "Delete",
+                                    checkoutFromLevel: "PRD",
+                                    owner  : "PFHSXK0",
+                                    path  : "DEV1",
+                                    stream  : "FTSDEMO",
+                                    taskName  : "${it}",
+                                    type  : "${type}"])
+        
+        cmd = "curl -m 7 -s -X POST 'http://cwcc:2020/ispw/ispw/assignments/SXK1000024/task/add?checkout=true' -H 'Authorization: f06cbdf8-5273-4664-8c54-1dc21cc8f3d9' -H 'Content-Type: application/json' -d '${payload}'"
+        status = runCommand(cmd, workspacedir) 
+        if (status > 1){
+            println "Error processing REST API Call"
+            currentBuild.result = 'FAILURE' // Set build to Success
+            exit
+            
+        }
+        echo "Deleted ${type} task->${it}"
+    }
+
+}
+def processchangeset(changedfile, type){
+
+    changedlist = []
+    modified = false
+
+    echo "******Entering ProcessChangeset*************"
+
+    changedfile.each{
+        if(it.findAll { item -> item.startsWith('M')}){
+            modified = true
+            //echo "modified true"
+        }
+        if(it.findAll { item -> item.startsWith('A')}){
+            modified = true
+            //echo "modified true"
+        }
+
+        file = it.substring(2)
+        filename = file.split("/")
+        position = filename.size() -1
+        member = filename[position].split("\\.")
+        membertype = member[1]
+        membername = member[0]
+
+        if(membertype.matches(type)){
+            echo "Adding item->" + membername
+            changedlist.add("${membername}")
+
+        }
+        if(modified && membertype.matches(type) ){
+            echo "Member Type->${membertype}\nMember->${membername}\nFile->${file}\n"
+            println("Moving->${type}->${membertype}")
+            println("Moving->${membername}")
+            cmd = cmd + "cp gitsource/${file} ./ftp/${membertype}/${membername}\n"
+            runCommand(cmd, workspacedir)
+        }
+    }
+    changedlist.each{
+        echo "changedlist item->" +it
+    }
+    echo "*********Exiting Process CHange set****************"
+    return changedlist
+}
+def gitcheckout(String URL, String Branch, String Credentials, String Folder)
+{
+    println "Scenario " + URL
+    println "Scenario " + Branch
+    println "Scenario " + Credentials
+    checkout changelog: false, poll: false, 
+    scm: [$class: 'GitSCM', 
+    branches: [[name: "*/${Branch}"]], 
+    doGenerateSubmoduleConfigurations: false, 
+    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: "${Folder}"], 
+    [$class: 'LocalBranch', localBranch: 'local']], 
+    submoduleCfg: [], 
+    userRemoteConfigs: [[credentialsId: "${Credentials}", name: 'origin', url: "${URL}"]]]
+}
 
 node{
 
@@ -76,68 +187,48 @@ node{
         addedfile = changeslist.find { item -> item.startsWith('A') }
         deletedfile = changeslist.find { item -> item.startsWith('D') }
 
-        echo "Processing Modified Files"
 
-        cmd = "#!/bin/sh -e\n "
-
-        cobollmembers = []
-        jclmembers = []
-        clistmembers = []
-
-        modifiedfile.each{
-            //echo it
-            file = it.substring(2)
-            filename = file.split("/")
-            position = filename.size() -1
-            member = filename[position].split("\\.")
-            membertype = member[1]
-            membername = member[0]
-            echo "Member Type->${membertype}\nMember->${membername}\nFile->${file}\n"
-
-            cmd = cmd + "cp gitsource/${file} ./ftp/${membertype}/${membername}\n"
-            runCommand(cmd, workspacedir) 
-
-            if(membertype == "cbl"){
-                //echo "Adding Cobol->" + membername
-                cobollmembers.add("${membername}")
+        filetype.each{
+            echo "Processing Modified Files for ${it}"
+            members = processchangeset(modifiedfile, "${it}")
+            if(it.matches("cbl")){
+                mainframetype = "COB"
             }
-            else if(membertype == "jcl"){
-                //echo "Adding JOB->" + membername
-                jclmembers.add("${membername}")
+            else if(it.matches("jcl")){
+                mainframetype = "JOB"
             }
-            else if(membertype == "clist"){
-                //echo "Adding CLIST->" + membername
-                clistmembers.add("${membername}")
+            else if(it.matches("cpy")){
+                mainframetype = "CPY"
+            }
+            members.each{
+                echo "API to Add ${it}"
+                ispwApi (it, mainframetype, "add")
             }
         }
-        echo "adding tasks in ispw"
-        cobollmembers.each{
-             // def ISPWAPI = 'http://cwcc:2020/ispw/connectionName/assignments/SXK1000024/tasks/add?checkout=true'
-             def payload = JsonOutput.toJson([application      : "SXK1",
-                                             checkoutFromLevel   : "PRD",
-                                             owner  : "PFHSXK0",
-                                             path  : "DEV1",
-                                             stream  : "FTSDEMO",
-                                             taskName  : "${it}",
-                                             type  : "COB"])
-            cmd = "curl -m 7 -s -X POST 'http://cwcc:2020/ispw/ispw/assignments/SXK1000024/task/add?checkout=true' -H 'Authorization: f06cbdf8-5273-4664-8c54-1dc21cc8f3d9' -H 'Content-Type: application/json' -d '${payload}'"
-            //echo "curl->" + cmd
-
-            status = runCommand(cmd, workspacedir) 
-            if (status > 1){
-                println "Error processing REST API Call"
-                currentBuild.result = 'FAILURE' // Set build to Success
-                exit
-                
+        echo "Processing Added Files"
+        filetype.each{
+            println("Seaching for ${it} changes")
+            members = processchangeset(addedfile, "${it}")
+            if(it.matches("cbl")){
+                mainframetype = "COB"
             }
-            echo "Added task->${it}"
-            
+            else if(it.matches("jcl")){
+                mainframetype = "JOB"
+            }
+            else if(it.matches("cpy")){
+                mainframetype = "cpy"
+            }
+            members.each{
+                ispwApi (it, mainframetype, "load")
+            }
         }
+
+
         echo "Moving files to Mainframe"
         filetype.each{
             dir("ftp/${it}")
             {
-                if (it == "jcl"){
+                if (it.matches("jcl")){
                     ISPWdirectory = '''\'SALESSUP.SXK1.DEV1.JOB\''''
                     ftpPublisher alwaysPublishFromMaster: false, continueOnError: false, failOnError: false, 
                     publishers: [[configName: 'cwcc', 
@@ -146,7 +237,7 @@ node{
                     remoteDirectorySDF: false, removePrefix: '', sourceFiles: '*']], 
                     usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: true]]
                 }
-                if (it == "cbl"){
+                if (it.matches("cbl")){
                     ISPWdirectory = '''\'SALESSUP.SXK1.DEV1.COB\''''
                     ftpPublisher alwaysPublishFromMaster: false, continueOnError: false, failOnError: false, 
                     publishers: [[configName: 'cwcc', 
