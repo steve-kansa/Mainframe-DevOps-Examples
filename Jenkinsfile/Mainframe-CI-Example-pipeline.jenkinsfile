@@ -96,6 +96,8 @@ import java.net.URL
         userRemoteConfigs: [[credentialsId: "${Credentials}", name: 'origin', url: "${URL}"]]]
  }
 
+
+
 /* 
   Node is a required part of the Jenkins pipeline for any steps to be executed
 */ 
@@ -142,13 +144,22 @@ node{
     /* 
      This stage is used to retieve Topaz for Total Tests from Git
      */ 
-    stage("Stage Test Data With File-Aid")
+    stage("Retrieve Tests")
     {
         //Retrieve the Tests from Github that match that ISPWW Stream and Application
         Git_URL = "${Git_URL}/${Git_TTT_Repo}"
 
         //call gitcheckout wrapper function
         gitcheckout(Git_URL, Git_Branch, Git_Credentials, "tests")
+    }
+
+    stage("Stage Test Data With File-Aid")
+    {
+        //Submit the JCL via the Topaz Utilities Plugin
+        topazSubmitJclMembers connectionId: "${HCI_Conn_ID}", 
+        credentialsId: "${HCI_Token}", 
+        jclMember: 'PFHSXK0.CWKT.CNTL(JCL)',
+        maxConditionCode: '4'
     }
 
     // findFiles method requires the "Pipeline Utilities Plugin"
@@ -278,6 +289,7 @@ node{
             
             // Call the SonarQube Scanner with properties defined above
             bat "${scannerHome}/bin/sonar-scanner" + SQ_Scanner_Properties
+
         }
             // Wait for the results of the SonarQube Quality Gate
             timeout(time: 2, unit: 'MINUTES') {
