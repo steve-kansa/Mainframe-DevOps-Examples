@@ -13,19 +13,22 @@ def filetype = ["cbl", "jcl", "cpy"]
 		 
 def runCommand(cmd, workspacedir) 
 {
-    def exists = fileExists "output.txt"
-
-    if (exists) {
-        //echo "Deleting File"
-        sh(returnStatus:true , script: "#!/bin/sh -e\n rm -f output.txt")
-    } 
-    //echo "Workspace is->" + workspacedir
+    echo "1"
+    echo "workspace->" + workspacedir
+    echo "command->" + cmd
+    //def exists = fileExists 'output.txt'
+    echo "2"
+    /*if (exists){
+        echo "Deleting File"
+        //sh(returnStatus:true , script: "#!/bin/sh -e\n rm -f output.txt")
+    } */
+    echo "Workspace is->" + workspacedir
     cmd = cmd + " > output.txt"
-    //echo "Command->" + cmd
+    echo "Command->" + cmd
     status = sh(returnStatus:true , script: '#!/bin/sh -e\n' + cmd)
-    //echo "Command Returned Status: " + status
+    echo "Command Returned Status: " + status
     output = readFile "output.txt"
-    //echo "Command Output: " + output
+    echo "Command Output: " + output
     return status
 }
 
@@ -34,6 +37,9 @@ def ispwApi(member, type, api){
     add = type =~ /add/
     load = type =~ /load/
     delete = type =~ /delete/
+
+    workspacedir = "${WORKSPACE}"
+
     if (add){
         echo "inside add"
         def payload = JsonOutput.toJson([application: "SXK1",
@@ -48,7 +54,7 @@ def ispwApi(member, type, api){
 
         status = runCommand(cmd, workspacedir) 
         if (status > 1){
-            println "Error processing REST API Call"
+            echo "Error processing REST API Call"
             currentBuild.result = 'FAILURE' // Set build to Success
             exit
             
@@ -68,7 +74,7 @@ def ispwApi(member, type, api){
 
         status = runCommand(cmd, workspacedir) 
         if (status > 1){
-            println "Error processing REST API Call"
+            echo "Error processing REST API Call"
             currentBuild.result = 'FAILURE' // Set build to Success
             exit
             
@@ -88,7 +94,7 @@ def ispwApi(member, type, api){
         cmd = "curl -m 7 -s -X POST 'http://cwcc:2020/ispw/ispw/assignments/SXK1000024/task/add?checkout=true' -H 'Authorization: f06cbdf8-5273-4664-8c54-1dc21cc8f3d9' -H 'Content-Type: application/json' -d '${payload}'"
         status = runCommand(cmd, workspacedir) 
         if (status > 1){
-            println "Error processing REST API Call"
+            echo "Error processing REST API Call"
             currentBuild.result = 'FAILURE' // Set build to Success
             exit
             
@@ -101,10 +107,12 @@ def processchangeset(changedfile, type){
 
     changedlist = []
     modified = false
+    cmdcpy = []
 
     echo "******Entering ProcessChangeset*************"
 
     changedfile.each{
+        echo "in changed file for ${it}"
         if(it.findAll { item -> item.startsWith('M')}){
             modified = true
             //echo "modified true"
@@ -113,38 +121,42 @@ def processchangeset(changedfile, type){
             modified = true
             //echo "modified true"
         }
-
+        echo "after modified flag compare"
         file = it.substring(2)
         filename = file.split("/")
         position = filename.size() -1
         member = filename[position].split("\\.")
         membertype = member[1]
         membername = member[0]
-
+        echo "after parsing"
         if(membertype.matches(type)){
             echo "Adding item->" + membername
             changedlist.add("${membername}")
 
         }
+        echo "after type match"
         if(modified && membertype.matches(type) ){
             echo "Member Type->${membertype}\nMember->${membername}\nFile->${file}\n"
-            println("Moving->${type}->${membertype}")
-            println("Moving->${membername}")
-            cmd = cmd + "cp gitsource/${file} ./ftp/${membertype}/${membername}\n"
-            runCommand(cmd, workspacedir)
+            echo("Moving->${type}->${membertype}")
+            echo("Moving->${membername}")
+            cmd = cmdcpy.add("cp gitsource/${file} ./ftp/${membertype}/${membername}")
         }
+        echo "after typw and modified match"
+    }
+    cmdcpy.each{
+            runCommand(it, workspacedir)
     }
     changedlist.each{
-        echo "changedlist item->" +it
+        echo "changedlist item->" + it
     }
     echo "*********Exiting Process CHange set****************"
     return changedlist
 }
 def gitcheckout(String URL, String Branch, String Credentials, String Folder)
 {
-    println "Scenario " + URL
-    println "Scenario " + Branch
-    println "Scenario " + Credentials
+    echo "Scenario " + URL
+    echo "Scenario " + Branch
+    echo "Scenario " + Credentials
     checkout changelog: false, poll: false, 
     scm: [$class: 'GitSCM', 
     branches: [[name: "*/${Branch}"]], 
@@ -163,13 +175,14 @@ node{
         gitcheckout(Git_URL, Git_Branch, Git_Credentials, "gitsource")
     }
  
-    stage("Move to ISPW"){
+    stage("Processing Git CHange")
+    {
 
         workspacedir = "${WORKSPACE}"
         
         dir("gitsource")
         {
-            println("Determining changed files")
+            echo("Determining changed files")
             changes = sh(returnStdout: true, script: "#!/bin/sh -e\n git log -n 1 --name-status | grep -E ^[AMD][[:space:]] | sort | uniq")
         }
         echo "Retrieved changes files from git"
@@ -177,19 +190,19 @@ node{
             cmd = sh(returnStdout: true, script: "#!/bin/sh -e\n mkdir -p ./ftp/${it} \n")
             echo "Created directory for: " + it       
         }
-        println "Processing changed files"
+        echo "Processing changed files"
         echo changes
         
         changeslist = changes.split('\n')
 
-        println "Processing Changes"
+        echo "Processing Changes"
         modifiedfile = changeslist.findAll { item -> item.startsWith('M') }
         addedfile = changeslist.find { item -> item.startsWith('A') }
         deletedfile = changeslist.find { item -> item.startsWith('D') }
 
 
         filetype.each{
-            echo "Processing Modified Files for ${it}"
+            echo "----------Processing Modified Files for ${it}"
             members = processchangeset(modifiedfile, "${it}")
             if(it.matches("cbl")){
                 mainframetype = "COB"
@@ -205,9 +218,10 @@ node{
                 ispwApi (it, mainframetype, "add")
             }
         }
-        echo "Processing Added Files"
+        echo ">>>>>>>>>>Completed Processing Modified Files"
+        echo "----------Processing Added Files"
         filetype.each{
-            println("Seaching for ${it} changes")
+            echo("Seaching for ${it} additions")
             members = processchangeset(addedfile, "${it}")
             if(it.matches("cbl")){
                 mainframetype = "COB"
@@ -222,13 +236,17 @@ node{
                 ispwApi (it, mainframetype, "load")
             }
         }
-
-
+        echo ">>>>>>>>>>Completed Processing Added Files"
+    }
+    stage("Retrieve Code From git")
+    {
         echo "Moving files to Mainframe"
         filetype.each{
+            echo "------FTP for + ${it}"
             dir("ftp/${it}")
             {
                 if (it.matches("jcl")){
+                    echo "***In JCL Mover"
                     ISPWdirectory = '''\'SALESSUP.SXK1.DEV1.JOB\''''
                     ftpPublisher alwaysPublishFromMaster: false, continueOnError: false, failOnError: false, 
                     publishers: [[configName: 'cwcc', 
@@ -238,6 +256,7 @@ node{
                     usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: true]]
                 }
                 if (it.matches("cbl")){
+                    echo "***In CBL Mover"
                     ISPWdirectory = '''\'SALESSUP.SXK1.DEV1.COB\''''
                     ftpPublisher alwaysPublishFromMaster: false, continueOnError: false, failOnError: false, 
                     publishers: [[configName: 'cwcc', 
@@ -249,4 +268,4 @@ node{
             }
         }
     }
-} 
+}

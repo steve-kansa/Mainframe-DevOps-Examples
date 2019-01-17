@@ -156,10 +156,19 @@ node{
     stage("Stage Test Data With File-Aid")
     {
         //Submit the JCL via the Topaz Utilities Plugin
+        //topazSubmitJclMembers connectionId: "${HCI_Conn_ID}", 
+        //credentialsId: "${HCI_Token}", 
+        //jclMember: 'PFHSXK0.CWKT.CNTL(JCL)',
+       // maxConditionCode: '4'
+
+
         topazSubmitJclMembers connectionId: "${HCI_Conn_ID}", 
         credentialsId: "${HCI_Token}", 
-        jclMember: 'PFHSXK0.CWKT.CNTL(JCL)',
+        jclMember: '''PFHSXK0.CWKT.CNTL(BIND)
+        PFHSXK0.BATCH.JCL(JCL)''', 
         maxConditionCode: '4'
+
+
     }
 
     // findFiles method requires the "Pipeline Utilities Plugin"
@@ -222,7 +231,7 @@ node{
                     jcl: "${TTT_Jcl}",                  // Name of the JCL file in the Total Test Project to execute
                     projectFolder: "${TTTProjectName}", // Name of the Folder in the file system that contains the Total Test Project.  
                     testSuite: "${TTTScenarioFullName}",// Name of the Total Test Scenario to execute
-                    useStubs: false])                   // (true|false) - Execute with or without stubs
+                    useStubs: true])                   // (true|false) - Execute with or without stubs
             }
         }
 
