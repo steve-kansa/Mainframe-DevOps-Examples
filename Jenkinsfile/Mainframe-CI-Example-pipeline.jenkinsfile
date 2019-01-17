@@ -222,7 +222,7 @@ node{
                     jcl: "${TTT_Jcl}",                  // Name of the JCL file in the Total Test Project to execute
                     projectFolder: "${TTTProjectName}", // Name of the Folder in the file system that contains the Total Test Project.  
                     testSuite: "${TTTScenarioFullName}",// Name of the Total Test Scenario to execute
-                    useStubs: false])                   // (true|false) - Execute with or without stubs
+                    useStubs: true])                   // (true|false) - Execute with or without stubs
             }
         }
 
