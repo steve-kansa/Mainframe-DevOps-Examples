@@ -162,12 +162,13 @@ node{
        // maxConditionCode: '4'
 
 
+        /*
         topazSubmitJclMembers connectionId: "${HCI_Conn_ID}", 
         credentialsId: "${HCI_Token}", 
         jclMember: '''PFHSXK0.CWKT.CNTL(BIND)
         PFHSXK0.CWKT.CNTL(JCL)''', 
         maxConditionCode: '4'
-
+        */
 
     }
 
