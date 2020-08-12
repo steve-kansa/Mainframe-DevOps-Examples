@@ -153,24 +153,24 @@ node{
         gitcheckout(Git_URL, Git_Branch, Git_Credentials, "tests")
     }
 
-    stage("Stage Test Data With File-Aid")
+    /*stage("Stage Test Data With File-Aid")
     {
-        //Submit the JCL via the Topaz Utilities Plugin
-        //topazSubmitJclMembers connectionId: "${HCI_Conn_ID}", 
-        //credentialsId: "${HCI_Token}", 
-        //jclMember: 'PFHSXK0.CWKT.CNTL(JCL)',
-       // maxConditionCode: '4'
+        Submit the JCL via the Topaz Utilities Plugin
+        topazSubmitJclMembers connectionId: "${HCI_Conn_ID}", 
+        credentialsId: "${HCI_Token}", 
+        jclMember: 'PFHSXK0.CWKT.CNTL(JCL)',
+        maxConditionCode: '4'
 
 
-        /*
+       
         topazSubmitJclMembers connectionId: "${HCI_Conn_ID}", 
         credentialsId: "${HCI_Token}", 
         jclMember: '''PFHSXK0.CWKT.CNTL(BIND)
         PFHSXK0.CWKT.CNTL(JCL)''', 
         maxConditionCode: '4'
-        */
+       
 
-    }
+    }*/
 
     // findFiles method requires the "Pipeline Utilities Plugin"
     // Get all testscenario files in the current workspace into an array
